@@ -60,11 +60,16 @@ def remove_high_vif(X, threshold=10):
 
 # 处理缺失值
 df = df.dropna(subset= y_var  + required_vars + optional_vars)
+y_var = df[y_var]
+X_initial = df[optional_vars]
+
 print("正在预筛选可选变量的共线性...")
 X_initial = df[optional_vars]
 X_filtered = remove_high_vif(X_initial, threshold=10)
 filtered_optional_vars = X_filtered.columns.tolist()
 print(f"共线性筛选后剩余 {len(filtered_optional_vars)} 个可选变量")
+X_filtered = X_filtered.loc[y_var.index]  # 确保 X_filtered 和 y 的行索引一致
+
 
 # 添加常数项
 def fit_model(X, y):
@@ -81,7 +86,7 @@ best_model = None
 best_p_value = float("inf")
 best_vars = None
 
-y = df["TEM"] # 更改y  1
+#y = df["TEM"] # 更改y  1
 
 max_combinations = 3  # 每个 r 只选 5 组
 best_models = []  # 存储 (p值, 变量组合, 模型)
@@ -92,7 +97,7 @@ for r in tqdm(range(1, len(optional_vars) + 1)):
 
     for opt_comb in tqdm(islice(comb_iter, max_combinations), leave=False):
         X = df[list(required_vars) + list(opt_comb)]
-        model, final_vars = fit_model(X, y)
+        model, final_vars = fit_model(X, y_var)
         if model is None:
             continue  # 跳过无效模型
         target_p_values = [model.pvalues[var] for var in target_vars if var in model.pvalues]
